@@ -2,6 +2,7 @@ import json
 import urllib.request
 from datetime import datetime
 import time
+import pandas as pd
 # {
 #   "type": "FeatureCollection",
 #   "metadata": {
@@ -55,16 +56,26 @@ now = int(time.time() * 1000)
 with urllib.request.urlopen('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson') as response:
     json_data = response.read().decode('utf-8')
     data = json.loads(json_data)
-    for ft in data['features']:
-        p=ft['properties']
-        place=p['place']
-        mag=p['mag']
-        epoch_time=p['time']
-        seven_days = 7 * 24 * 60 * 60 * 1000
-        cutoff = now - seven_days
-        if ("California" in place or ", CA" in place) and epoch_time>=cutoff:
-            dt=datetime.fromtimestamp(epoch_time / 1000)
-            formatted_time=dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-            print(f"{formatted_time} | {place} | M {mag}")
+rows=[]
+seven_days = 7 * 24 * 60 * 60 * 1000
+cutoff = now - seven_days
+    
+for ft in data['features']:
+    p=ft['properties']
+    place=p['place']
+    mag=p['mag']
+    epoch_time=p['time']
+    if ("California" in place or ", CA" in place) and epoch_time>=cutoff:
+        dt=datetime.fromtimestamp(epoch_time / 1000)
+        formatted_time=dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        rows.append({
+            "Time": formatted_time,
+            "Place": place,
+            "Magnitude": mag
+        })
 
+df = pd.DataFrame(rows)
+df = df.sort_values(by="Time",ascending=False)
+print(df.to_string(index=False))
+        #print(f"{formatted_time} | {place} | M {mag}")
 #print(json_data)
